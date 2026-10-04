@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f5ef" />
+    <meta name="description" content="词刻：每天一点，把新单词真正记住。" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css?v=3" />
+    <title>词刻 · 每日单词</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#today" aria-label="词刻首页">
+          <img src="./icon.svg" width="38" height="38" alt="" />
+          <span>词刻</span>
+        </a>
+        <nav class="nav-tabs" aria-label="主导航">
+          <button class="nav-tab is-active" data-view="today">今日</button>
+          <button class="nav-tab" data-view="words">词库</button>
+          <button class="nav-tab" data-view="settings">设置</button>
+        </nav>
+        <button class="icon-button" id="quick-add" type="button" title="添加单词" aria-label="添加单词">+</button>
+      </header>
+
+      <main>
+        <section class="view is-active" id="view-today" data-view-panel="today">
+          <div class="day-heading">
+            <div>
+              <p class="eyebrow" id="today-date">今天</p>
+              <h1>今天也留一点时间给单词。</h1>
+            </div>
+            <div class="streak" aria-label="连续学习天数">
+              <span class="streak-number" id="streak-count">0</span>
+              <span>天连续</span>
+            </div>
+          </div>
+
+          <section class="progress-band" aria-labelledby="progress-title">
+            <div class="progress-copy">
+              <p class="eyebrow" id="progress-title">今日进度</p>
+              <p><strong id="learned-count">0</strong><span id="goal-copy"> / 10 个</span></p>
+            </div>
+            <div class="progress-track" aria-hidden="true"><span id="progress-fill"></span></div>
+            <p class="progress-note" id="progress-note">从第一个词开始吧</p>
+          </section>
+
+          <section class="study-area" id="study-area" aria-live="polite">
+            <div class="word-card" id="word-card">
+              <div class="card-topline">
+                <span class="word-number" id="word-number">今日 1 / 10</span>
+                <button class="sound-button" id="speak-word" type="button" title="朗读单词" aria-label="朗读单词">♪</button>
+              </div>
+              <div class="word-main">
+                <p class="word" id="current-word">serendipity</p>
+                <p class="phonetic" id="current-phonetic">/ˌserənˈdɪpəti/</p>
+                <div class="meaning-wrap is-hidden" id="meaning-wrap">
+                  <p class="meaning" id="current-meaning">意外发现美好事物的运气</p>
+                  <p class="example" id="current-example">Finding that little bookstore was pure serendipity.</p>
+                </div>
+              </div>
+              <button class="reveal-button" id="reveal-answer" type="button">查看释义</button>
+              <div class="rating-actions is-hidden" id="rating-actions">
+                <button class="secondary-action" id="again-word" type="button"><span aria-hidden="true">↺</span> 再学一次</button>
+                <button class="primary-action" id="know-word" type="button"><span aria-hidden="true">✓</span> 认识</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="finished-state is-hidden" id="finished-state">
+            <span class="finish-mark" aria-hidden="true">✓</span>
+            <h2>今天的词都过完了</h2>
+            <p id="finish-copy">明天再见，记忆需要一点时间生长。</p>
+            <button class="secondary-action" id="review-again" type="button">再复习一轮</button>
+          </section>
+        </section>
+
+        <section class="view" id="view-words" data-view-panel="words">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">我的词库</p>
+              <h1>要记住的词，都在这里。</h1>
+            </div>
+            <button class="primary-action compact" id="add-word-main" type="button"><span aria-hidden="true">+</span> 添加单词</button>
+          </div>
+          <div class="word-list-toolbar">
+            <label class="search-field">
+              <span aria-hidden="true">⌕</span>
+              <input id="word-search" type="search" placeholder="搜索单词或释义" autocomplete="off" />
+            </label>
+            <p><span id="word-total">0</span> 个单词</p>
+          </div>
+          <div class="word-list" id="word-list"></div>
+          <div class="empty-state is-hidden" id="empty-words">
+            <p>还没有匹配的单词</p>
+          </div>
+        </section>
+
+        <section class="view" id="view-settings" data-view-panel="settings">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">学习设置</p>
+              <h1>把提醒放进你的日常。</h1>
+            </div>
+          </div>
+          <div class="settings-grid">
+            <section class="setting-section">
+              <div class="setting-copy">
+                <h2>每日提醒</h2>
+                <p>到时间后，词刻会在可用时发送浏览器通知。</p>
+              </div>
+              <label class="switch">
+                <input id="reminder-enabled" type="checkbox" />
+                <span aria-hidden="true"></span>
+                <b>开启提醒</b>
+              </label>
+              <label class="field-label" for="reminder-time">提醒时间</label>
+              <input class="time-input" id="reminder-time" type="time" value="20:30" />
+              <button class="secondary-action left" id="test-notification" type="button">发送测试提醒</button>
+              <p class="setting-hint" id="notification-status">尚未开启通知权限</p>
+            </section>
+
+            <section class="setting-section">
+              <div class="setting-copy">
+                <h2>每日目标</h2>
+                <p>选择一个舒服的节奏，持续比数量更重要。</p>
+              </div>
+              <div class="goal-options" role="radiogroup" aria-label="每日目标">
+                <button type="button" data-goal="5">5</button>
+                <button type="button" data-goal="10" class="is-selected">10</button>
+                <button type="button" data-goal="15">15</button>
+                <button type="button" data-goal="20">20</button>
+              </div>
+              <p class="setting-hint">个单词 / 天</p>
+            </section>
+
+            <section class="setting-section span-two">
+              <div class="setting-copy">
+                <h2>数据</h2>
+                <p>学习记录保存在当前浏览器中。</p>
+              </div>
+              <button class="text-danger" id="reset-data" type="button">清空学习记录</button>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="add-dialog">
+      <form method="dialog" id="add-word-form">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">新单词</p>
+            <h2>添加到词库</h2>
+          </div>
+          <button class="dialog-close" value="cancel" type="submit" aria-label="关闭" title="关闭">×</button>
+        </div>
+        <label>单词<input name="word" required maxlength="60" autocomplete="off" placeholder="例如: resilient" /></label>
+        <label>音标<input name="phonetic" maxlength="80" placeholder="例如: /rɪˈzɪliənt/" /></label>
+        <label>中文释义<input name="meaning" required maxlength="120" placeholder="例如: 有韧性的；能复原的" /></label>
+        <label>例句<textarea name="example" maxlength="240" rows="3" placeholder="写一句帮助记忆的例句"></textarea></label>
+        <button class="primary-action full" type="submit" value="default">添加单词</button>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js?v=3"></script>
+  </body>
+</html>

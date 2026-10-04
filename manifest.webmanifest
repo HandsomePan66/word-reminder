@@ -1,0 +1,19 @@
+{
+  "name": "词刻 · 每日单词",
+  "short_name": "词刻",
+  "description": "每天一点，把新单词真正记住。",
+  "lang": "zh-CN",
+  "start_url": "./#today",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f5ef",
+  "theme_color": "#f7f5ef",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

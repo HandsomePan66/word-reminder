@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">词刻应用图标</title>
+  <rect width="128" height="128" rx="24" fill="#1f6a4b"/>
+  <path d="M31 28h39c15 0 27 12 27 27v47H58c-15 0-27-12-27-27V28Z" fill="#fffef9"/>
+  <path d="M51 49h26M51 64h31M51 79h20" fill="none" stroke="#1f6a4b" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="96" cy="32" r="13" fill="#f2c94c"/>
+</svg>
