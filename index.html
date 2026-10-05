@@ -7,7 +7,7 @@
     <meta name="description" content="词刻：每天一点，把新单词真正记住。" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=3" />
+    <link rel="stylesheet" href="./styles.css?v=4" />
     <title>词刻 · 每日单词</title>
   </head>
   <body>
@@ -46,6 +46,17 @@
             <div class="progress-track" aria-hidden="true"><span id="progress-fill"></span></div>
             <p class="progress-note" id="progress-note">从第一个词开始吧</p>
           </section>
+          <div class="study-source-bar">
+            <label for="study-category">今日学习范围</label>
+            <select id="study-category" class="category-select">
+              <option value="听力基础">听力基础</option>
+              <option value="听力提高">听力提高</option>
+              <option value="阅读基础">阅读基础</option>
+              <option value="阅读冲刺">阅读冲刺</option>
+              <option value="all">全部词库</option>
+              <option value="自定义">自定义单词</option>
+            </select>
+          </div>
 
           <section class="study-area" id="study-area" aria-live="polite">
             <div class="word-card" id="word-card">
@@ -86,13 +97,24 @@
             <button class="primary-action compact" id="add-word-main" type="button"><span aria-hidden="true">+</span> 添加单词</button>
           </div>
           <div class="word-list-toolbar">
-            <label class="search-field">
-              <span aria-hidden="true">⌕</span>
-              <input id="word-search" type="search" placeholder="搜索单词或释义" autocomplete="off" />
-            </label>
+            <div class="word-list-filters">
+              <label class="search-field">
+                <span aria-hidden="true">⌕</span>
+                <input id="word-search" type="search" placeholder="搜索单词或释义" autocomplete="off" />
+              </label>
+              <select id="word-category" class="category-select" aria-label="筛选词库分类">
+                <option value="all">全部分类</option>
+                <option value="听力基础">听力基础</option>
+                <option value="听力提高">听力提高</option>
+                <option value="阅读基础">阅读基础</option>
+                <option value="阅读冲刺">阅读冲刺</option>
+                <option value="自定义">自定义单词</option>
+              </select>
+            </div>
             <p><span id="word-total">0</span> 个单词</p>
           </div>
           <div class="word-list" id="word-list"></div>
+          <button class="secondary-action load-more is-hidden" id="load-more" type="button">再显示 100 个</button>
           <div class="empty-state is-hidden" id="empty-words">
             <p>还没有匹配的单词</p>
           </div>
@@ -166,6 +188,7 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=3"></script>
+    <script src="./vocabulary.js?v=4"></script>
+    <script src="./app.js?v=4"></script>
   </body>
 </html>

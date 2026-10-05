@@ -1,4 +1,5 @@
 const STORAGE_KEY = "cike-v3";
+const IMPORT_VERSION = "ielts-handbook-v1";
 
 function makeId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -13,20 +14,22 @@ function clone(value) {
     : JSON.parse(JSON.stringify(value));
 }
 
-const starterWords = [
-  { id: makeId(), word: "serendipity", phonetic: "/ˌserənˈdɪpəti/", meaning: "意外发现美好事物的运气", example: "Finding that little bookstore was pure serendipity.", level: 0, due: null },
-  { id: makeId(), word: "resilient", phonetic: "/rɪˈzɪliənt/", meaning: "有韧性的；能迅速恢复的", example: "Children are often more resilient than we expect.", level: 0, due: null },
-  { id: makeId(), word: "eloquent", phonetic: "/ˈeləkwənt/", meaning: "雄辩的；表达流畅的", example: "Her quiet gesture was more eloquent than words.", level: 0, due: null },
-  { id: makeId(), word: "wander", phonetic: "/ˈwɒndər/", meaning: "漫步；徘徊", example: "We wandered through the old streets at dusk.", level: 0, due: null },
-  { id: makeId(), word: "subtle", phonetic: "/ˈsʌtl/", meaning: "微妙的；不易察觉的", example: "There was a subtle change in his tone.", level: 0, due: null },
-  { id: makeId(), word: "thrive", phonetic: "/θraɪv/", meaning: "茁壮成长；兴旺", example: "Some plants thrive in indirect light.", level: 0, due: null },
-  { id: makeId(), word: "deliberate", phonetic: "/dɪˈlɪbərət/", meaning: "深思熟虑的；故意的", example: "She made a deliberate choice to slow down.", level: 0, due: null },
-  { id: makeId(), word: "embrace", phonetic: "/ɪmˈbreɪs/", meaning: "拥抱；欣然接受", example: "Learning begins when we embrace uncertainty.", level: 0, due: null },
-  { id: makeId(), word: "vivid", phonetic: "/ˈvɪvɪd/", meaning: "生动的；鲜明的", example: "I still have vivid memories of that summer.", level: 0, due: null },
-  { id: makeId(), word: "curious", phonetic: "/ˈkjʊəriəs/", meaning: "好奇的；稀奇的", example: "Stay curious about the world around you.", level: 0, due: null },
-  { id: makeId(), word: "linger", phonetic: "/ˈlɪŋɡər/", meaning: "逗留；萦绕", example: "The scent of coffee lingered in the room.", level: 0, due: null },
-  { id: makeId(), word: "insight", phonetic: "/ˈɪnsaɪt/", meaning: "洞察力；深刻见解", example: "The book offers fresh insight into creativity.", level: 0, due: null }
-];
+function stableWordId(word) {
+  let hash = 2166136261;
+  for (const char of word.toLowerCase()) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `handbook-${(hash >>> 0).toString(36)}`;
+}
+
+const starterWords = (window.HANDBOOK_WORDS || []).map((item) => ({
+  ...item,
+  id: stableWordId(item.word),
+  phonetic: "",
+  level: 0,
+  due: null
+}));
 
 const defaultState = {
   words: starterWords,
@@ -37,7 +40,9 @@ const defaultState = {
   studyDate: "",
   lastStudyDate: "",
   streak: 0,
-  lastNotifiedDate: ""
+  lastNotifiedDate: "",
+  studyCategory: "听力基础",
+  importVersion: IMPORT_VERSION
 };
 
 let state = loadState();
@@ -46,6 +51,7 @@ let queueIndex = 0;
 let reviewedThisSession = 0;
 let reminderTimer = null;
 let toastTimer = null;
+let wordListLimit = 100;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -66,7 +72,22 @@ function addDays(dateText, days) {
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (saved?.words) return { ...defaultState, ...saved };
+    if (saved?.words) {
+      const hydrated = { ...defaultState, ...saved };
+      if (saved.importVersion !== IMPORT_VERSION) {
+        const existingByWord = new Map(saved.words.map((item) => [item.word.toLowerCase(), item]));
+        const importedKeys = new Set(starterWords.map((item) => item.word.toLowerCase()));
+        const imported = starterWords.map((item) => {
+          const existing = existingByWord.get(item.word.toLowerCase());
+          return existing ? { ...item, ...existing, id: item.id, category: item.category } : item;
+        });
+        const custom = saved.words.filter((item) => !importedKeys.has(item.word.toLowerCase()));
+        hydrated.words = [...imported, ...custom];
+        hydrated.importVersion = IMPORT_VERSION;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(hydrated));
+      }
+      return hydrated;
+    }
   } catch (error) {
     console.warn("Could not read saved data", error);
   }
@@ -84,9 +105,10 @@ function prepareDay() {
     state.learnedToday = 0;
     saveState();
   }
-  const due = state.words.filter((item) => !item.due || item.due <= today);
-  const later = state.words.filter((item) => item.due && item.due > today);
-  queue = [...due, ...later].slice(0, Math.min(state.goal, state.words.length));
+  const eligible = state.words.filter((item) => categoryMatches(item, state.studyCategory));
+  const due = eligible.filter((item) => !item.due || item.due <= today);
+  const later = eligible.filter((item) => item.due && item.due > today);
+  queue = [...due, ...later].slice(0, Math.min(state.goal, eligible.length));
   queueIndex = 0;
   reviewedThisSession = 0;
 }
@@ -180,28 +202,36 @@ function speakCurrentWord() {
 
 function renderWordList() {
   const query = $("#word-search").value.trim().toLowerCase();
-  const words = state.words.filter((item) => `${item.word} ${item.meaning}`.toLowerCase().includes(query));
+  const category = $("#word-category").value;
+  const words = state.words.filter((item) => categoryMatches(item, category) && `${item.word} ${item.meaning}`.toLowerCase().includes(query));
   $("#word-total").textContent = state.words.length;
   $("#empty-words").classList.toggle("is-hidden", Boolean(words.length));
+  $("#load-more").classList.toggle("is-hidden", words.length <= wordListLimit);
   const list = $("#word-list");
   list.replaceChildren();
   const today = localDate();
-  words.forEach((item) => {
+  words.slice(0, wordListLimit).forEach((item) => {
     const row = document.createElement("div");
     row.className = "word-row";
     const dueText = !item.due || item.due <= today ? "今日复习" : `${item.due.slice(5).replace("-", "/")} 复习`;
     row.innerHTML = `
       <strong></strong>
-      <span class="row-meaning"></span>
+      <span class="row-meaning"><span></span><small></small></span>
       <span class="due-label"></span>
       <button class="delete-word" type="button" title="删除单词" aria-label="删除 ${escapeHtml(item.word)}">×</button>
     `;
     row.querySelector("strong").textContent = item.word;
-    row.querySelector(".row-meaning").textContent = item.meaning;
+    row.querySelector(".row-meaning span").textContent = item.meaning;
+    row.querySelector(".row-meaning small").textContent = item.category || "自定义";
     row.querySelector(".due-label").textContent = dueText;
     row.querySelector("button").addEventListener("click", () => deleteWord(item.id));
     list.append(row);
   });
+}
+
+function categoryMatches(item, category) {
+  if (!category || category === "all") return true;
+  return (item.category || "自定义").startsWith(category);
 }
 
 function escapeHtml(value) {
@@ -239,6 +269,7 @@ function addWord(event) {
     phonetic: data.get("phonetic").trim(),
     meaning: data.get("meaning").trim(),
     example: data.get("example").trim(),
+    category: "自定义",
     level: 0,
     due: null
   });
@@ -260,6 +291,7 @@ function switchView(name) {
 function renderSettings() {
   $("#reminder-enabled").checked = state.reminderEnabled;
   $("#reminder-time").value = state.reminderTime;
+  $("#study-category").value = state.studyCategory;
   $$("[data-goal]").forEach((button) => button.classList.toggle("is-selected", Number(button.dataset.goal) === state.goal));
   const permission = "Notification" in window ? Notification.permission : "unsupported";
   const statusMap = { granted: "通知权限已开启", denied: "通知权限被浏览器拒绝，请在网站设置中修改", default: "尚未开启通知权限", unsupported: "当前浏览器不支持系统通知" };
@@ -286,7 +318,7 @@ async function setReminderEnabled(enabled) {
 
 function scheduleReminder() {
   clearTimeout(reminderTimer);
-  if (!state.reminderEnabled || Notification.permission !== "granted") return;
+  if (!("Notification" in window) || !state.reminderEnabled || Notification.permission !== "granted") return;
   const [hours, minutes] = state.reminderTime.split(":").map(Number);
   const now = new Date();
   const target = new Date();
@@ -312,7 +344,7 @@ async function sendNotification(title, body) {
 }
 
 function catchUpReminder() {
-  if (!state.reminderEnabled || Notification.permission !== "granted" || state.lastNotifiedDate === localDate()) return;
+  if (!("Notification" in window) || !state.reminderEnabled || Notification.permission !== "granted" || state.lastNotifiedDate === localDate()) return;
   const [hours, minutes] = state.reminderTime.split(":").map(Number);
   const now = new Date();
   const isPastTime = now.getHours() > hours || (now.getHours() === hours && now.getMinutes() >= minutes);
@@ -331,8 +363,16 @@ function setGoal(goal) {
   showToast(`每日目标已设为 ${goal} 个`);
 }
 
+function setStudyCategory(category) {
+  state.studyCategory = category;
+  saveState();
+  prepareDay();
+  renderAll();
+  showToast("今日学习范围已更新");
+}
+
 function resetData() {
-  if (!confirm("清空所有学习记录并恢复示例词库？此操作无法撤销。")) return;
+  if (!confirm("清空所有学习记录并恢复手册词库？此操作无法撤销。")) return;
   state = clone(defaultState);
   localStorage.removeItem(STORAGE_KEY);
   prepareDay();
@@ -366,7 +406,10 @@ function bindEvents() {
   $("#again-word").addEventListener("click", () => rateWord(false));
   $("#speak-word").addEventListener("click", speakCurrentWord);
   $("#review-again").addEventListener("click", () => { queueIndex = 0; renderCard(); });
-  $("#word-search").addEventListener("input", renderWordList);
+  $("#word-search").addEventListener("input", () => { wordListLimit = 100; renderWordList(); });
+  $("#word-category").addEventListener("change", () => { wordListLimit = 100; renderWordList(); });
+  $("#load-more").addEventListener("click", () => { wordListLimit += 100; renderWordList(); });
+  $("#study-category").addEventListener("change", (event) => setStudyCategory(event.target.value));
   $("#reminder-enabled").addEventListener("change", (event) => setReminderEnabled(event.target.checked));
   $("#reminder-time").addEventListener("change", (event) => { state.reminderTime = event.target.value; saveState(); scheduleReminder(); showToast("提醒时间已更新"); });
   $("#test-notification").addEventListener("click", async () => {

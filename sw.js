@@ -1,5 +1,5 @@
-const CACHE = "cike-v3";
-const APP_SHELL = ["./", "./index.html", "./styles.css?v=3", "./app.js?v=3", "./manifest.webmanifest", "./icon.svg"];
+const CACHE = "cike-v4";
+const APP_SHELL = ["./", "./index.html", "./styles.css?v=4", "./vocabulary.js?v=4", "./app.js?v=4", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL)));
